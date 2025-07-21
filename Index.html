@@ -11,9 +11,11 @@
     <!-- pdf.js library for parsing PDFs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <script>
-        // Required setup for pdf.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
     </script>
+    
+    <!-- Tesseract.js for OCR -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js'></script>
     
     <!-- Custom Font and Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -52,18 +54,17 @@
             100% { transform: rotate(360deg); }
         }
         /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #171717;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #404040;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #525252;
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #171717; }
+        ::-webkit-scrollbar-thumb { background: #404040; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #525252; }
+
+        /* Highlighting style */
+        mark {
+            background-color: #fde047; /* yellow-300 */
+            color: #18181b; /* zinc-900 */
+            padding: 2px 1px;
+            border-radius: 3px;
         }
     </style>
 </head>
@@ -81,7 +82,6 @@
                 <p class="mt-3 text-lg text-neutral-400 max-w-2xl mx-auto">
                     Your AI-powered assistant for extracting insights from policy documents, contracts, and reports.
                 </p>
-                <!-- Team Information -->
                 <div class="mt-6 glass-card max-w-2xl mx-auto p-4 rounded-lg">
                     <p class="font-bold text-lg text-blue-400">Team: HackerXHacker</p>
                     <p class="text-sm text-neutral-300 mt-2">
@@ -93,7 +93,6 @@
             <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <!-- Left Column: File Upload and Management -->
                 <div class="flex flex-col gap-8">
-                    <!-- File Upload Card -->
                     <div id="upload-card" class="glass-card rounded-xl p-6 shadow-2xl">
                         <div class="flex items-center gap-4 mb-4">
                             <i data-lucide="upload-cloud" class="w-8 h-8 text-blue-400"></i>
@@ -103,18 +102,17 @@
                             <div class="text-center">
                                 <i data-lucide="file-text" class="mx-auto h-12 w-12 text-neutral-500"></i>
                                 <div class="mt-4 flex text-sm leading-6 text-neutral-400">
-                                    <label for="file-upload" class="relative cursor-pointer rounded-md font-semibold text-blue-400 focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 focus-within:ring-offset-gray-900 hover:text-blue-500">
+                                    <label for="file-upload" class="relative cursor-pointer rounded-md font-semibold text-blue-400 hover:text-blue-500">
                                         <span>Select files</span>
                                         <input id="file-upload" name="file-upload" type="file" class="sr-only" multiple accept=".pdf">
                                     </label>
                                     <p class="pl-1">or drag and drop</p>
                                 </div>
-                                <p class="text-xs leading-5 text-neutral-500">PDF files only</p>
+                                <p class="text-xs leading-5 text-neutral-500">Please convert Word/Email files to PDF before uploading.</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Uploaded Files Card -->
                     <div id="files-card" class="glass-card rounded-xl p-6 shadow-2xl flex-grow">
                         <div class="flex items-center gap-4 mb-4">
                             <i data-lucide="files" class="w-8 h-8 text-blue-400"></i>
@@ -128,28 +126,26 @@
 
                 <!-- Right Column: Q&A and Results -->
                 <div class="flex flex-col gap-8">
-                    <!-- Q&A Card -->
                     <div id="qa-card" class="glass-card rounded-xl p-6 shadow-2xl">
                         <div class="flex items-center gap-4 mb-4">
                              <i data-lucide="message-circle-question" class="w-8 h-8 text-blue-400"></i>
                             <h2 class="text-2xl font-semibold text-white">2. Ask a Question</h2>
                         </div>
                         <div class="mt-4">
-                            <textarea id="question-input" class="w-full bg-neutral-800 border border-neutral-600 rounded-lg p-3 text-white placeholder-neutral-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" rows="4" placeholder="Describe a scenario, e.g., '46M, knee surgery, 3-month policy'"></textarea>
-                            <button id="ask-button" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-neutral-600 disabled:cursor-not-allowed text-white font-bold py-3 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center gap-2">
+                            <textarea id="question-input" class="w-full bg-neutral-800 border border-neutral-600 rounded-lg p-3 text-white placeholder-neutral-500 focus:ring-2 focus:ring-blue-500" rows="4" placeholder="Describe a scenario, e.g., '46M, knee surgery, 3-month policy'"></textarea>
+                            <button id="ask-button" class="mt-4 w-full bg-blue-600 hover:bg-blue-700 disabled:bg-neutral-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-2">
                                 <i data-lucide="sparkles" class="w-5 h-5"></i>
                                 Get Answer
                             </button>
                         </div>
                     </div>
 
-                    <!-- Answer Card -->
                     <div id="answer-card" class="glass-card rounded-xl p-6 shadow-2xl flex-grow">
                         <div class="flex items-center gap-4 mb-4">
                              <i data-lucide="file-check-2" class="w-8 h-8 text-blue-400"></i>
                             <h2 class="text-2xl font-semibold text-white">Answer</h2>
                         </div>
-                        <div id="answer-container" class="mt-4 text-neutral-300 prose prose-invert max-w-none max-h-[28rem] overflow-y-auto pr-2">
+                        <div id="answer-container" class="mt-4 max-h-[40rem] overflow-y-auto pr-2">
                            <div id="answer-placeholder" class="text-center text-neutral-500 py-8">
                                 <p>Your answer will appear here.</p>
                            </div>
@@ -157,295 +153,334 @@
                                <div class="loader"></div>
                                <p class="ml-4 text-neutral-400">Analyzing documents...</p>
                            </div>
-                           <div id="answer-output" class="hidden whitespace-pre-wrap"></div>
+                           <div id="answer-output" class="hidden prose prose-invert max-w-none"></div>
+                           <div id="source-container" class="hidden mt-6">
+                               <h3 class="font-semibold text-lg text-neutral-200 border-t border-neutral-700 pt-4">Source Context</h3>
+                               <div id="source-text" class="mt-2 text-sm text-neutral-400 bg-neutral-900/50 p-4 rounded-lg whitespace-pre-wrap max-h-64 overflow-y-auto"></div>
+                           </div>
                         </div>
                     </div>
                 </div>
             </main>
-            
-            <!-- How to Use Section -->
-            <div class="mt-8 glass-card rounded-xl p-6 shadow-2xl">
-                <div class="flex items-center gap-4 mb-4">
-                    <i data-lucide="info" class="w-8 h-8 text-blue-400"></i>
-                    <h2 class="text-2xl font-semibold text-white">How to Use</h2>
-                </div>
-                <div class="text-neutral-400 space-y-4 text-sm">
-                    <p>
-                        <strong class="text-white">1. Describe a Scenario:</strong> The AI is trained to understand shorthand. Simply describe the key facts of a case, and the AI will interpret it as a claim scenario.
-                    </p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="bg-neutral-800/50 p-3 rounded-lg">
-                            <p class="font-semibold text-neutral-300">Good Example:</p>
-                            <p class="text-neutral-500">"46M, knee surgery, 3-month policy"</p>
-                        </div>
-                        <div class="bg-neutral-800/50 p-3 rounded-lg">
-                            <p class="font-semibold text-neutral-300">Another Good Example:</p>
-                            <p class="text-neutral-500">"Is a 46-year-old male with a 3-month-old policy covered for knee surgery?"</p>
-                        </div>
-                    </div>
-                    <p>
-                        <strong class="text-white">2. Interpret the Response:</strong> The AI will provide a direct "Yes" or "No" answer based *strictly* on the rules found in the uploaded documents. The explanation will highlight the most critical clause and the source document that determined the decision.
-                    </p>
-                    <p>
-                        <strong class="text-white">3. Test Different Scenarios:</strong> Try changing key details in your query to see how the outcome changes. For example, changing the policy age from "3 months" to "3 years" should result in a different answer based on the waiting period clauses in the sample documents.
-                    </p>
-                </div>
-            </div>
-
         </div>
     </div>
 
     <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
 
-        // State management for the application
-        const state = {
-            files: new Map(), // Using a Map to store file objects and their extracted text
-            isProcessing: false,
-        };
+            const state = {
+                files: new Map(),
+                isProcessing: false,
+                lastRetrievedChunks: [],
+            };
 
-        // DOM element references
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-upload');
-        const fileList = document.getElementById('file-list');
-        const noFilesMessage = document.getElementById('no-files-message');
-        const askButton = document.getElementById('ask-button');
-        const questionInput = document.getElementById('question-input');
-        const loader = document.getElementById('loader');
-        const answerPlaceholder = document.getElementById('answer-placeholder');
-        const answerOutput = document.getElementById('answer-output');
+            const dom = {
+                dropZone: document.getElementById('drop-zone'),
+                fileInput: document.getElementById('file-upload'),
+                fileList: document.getElementById('file-list'),
+                noFilesMessage: document.getElementById('no-files-message'),
+                askButton: document.getElementById('ask-button'),
+                questionInput: document.getElementById('question-input'),
+                loader: document.getElementById('loader'),
+                answerPlaceholder: document.getElementById('answer-placeholder'),
+                answerOutput: document.getElementById('answer-output'),
+                sourceContainer: document.getElementById('source-container'),
+                sourceText: document.getElementById('source-text'),
+            };
 
-        // --- File Handling Logic ---
-
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('border-blue-400', 'bg-neutral-800/50');
-        });
-
-        dropZone.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('border-blue-400', 'bg-neutral-800/50');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('border-blue-400', 'bg-neutral-800/50');
-            const droppedFiles = e.dataTransfer.files;
-            if (droppedFiles.length) {
-                handleFiles(droppedFiles);
-            }
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            handleFiles(e.target.files);
-        });
-
-        function handleFiles(files) {
-            const pdfFiles = Array.from(files).filter(file => file.type === 'application/pdf');
-            if (pdfFiles.length === 0) {
-                showToast('Please select PDF files only.', 'error');
-                return;
-            }
-            pdfFiles.forEach(file => {
-                if (!state.files.has(file.name)) {
-                    state.files.set(file.name, { file, text: null, status: 'processing' });
-                    extractTextFromPdf(file);
+            // --- Event Listeners ---
+            dom.dropZone.addEventListener('dragover', e => { e.preventDefault(); dom.dropZone.classList.add('border-blue-400'); });
+            dom.dropZone.addEventListener('dragleave', e => { e.preventDefault(); dom.dropZone.classList.remove('border-blue-400'); });
+            dom.dropZone.addEventListener('drop', e => {
+                e.preventDefault();
+                dom.dropZone.classList.remove('border-blue-400');
+                if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+            });
+            dom.fileInput.addEventListener('change', e => handleFiles(e.target.files));
+            dom.askButton.addEventListener('click', handleQuestion);
+            dom.fileList.addEventListener('click', e => {
+                const removeBtn = e.target.closest('.remove-file-btn');
+                if (removeBtn) {
+                    state.files.delete(removeBtn.dataset.filename);
+                    updateFileList();
                 }
             });
-            updateFileList();
-        }
 
-        async function extractTextFromPdf(file) {
-            try {
-                const fileReader = new FileReader();
-                fileReader.onload = async function() {
-                    try {
-                        const typedarray = new Uint8Array(this.result);
-                        const pdf = await pdfjsLib.getDocument(typedarray).promise;
-                        let fullText = '';
-                        for (let i = 1; i <= pdf.numPages; i++) {
-                            const page = await pdf.getPage(i);
-                            const textContent = await page.getTextContent();
-                            fullText += textContent.items.map(item => item.str).join(' ') + '\n\n';
-                        }
-                        const fileData = state.files.get(file.name);
-                        fileData.text = fullText;
-                        fileData.status = 'ready';
-                        updateFileList();
-                    } catch (pdfError) {
-                         console.error('Error processing PDF content:', pdfError);
-                        const fileData = state.files.get(file.name);
-                        fileData.status = 'error';
-                        updateFileList();
-                        showToast(`Failed to process ${file.name}.`, 'error');
+            // --- Core Functions ---
+            function handleFiles(files) {
+                const pdfFiles = Array.from(files).filter(f => f.type === 'application/pdf');
+                if (pdfFiles.length === 0) return showToast('Please select PDF files only.', 'error');
+                
+                pdfFiles.forEach(file => {
+                    if (!state.files.has(file.name)) {
+                        state.files.set(file.name, { file, text: null, chunks: [], status: 'processing', statusText: 'Queued...' });
+                        processFile(file);
                     }
-                };
-                fileReader.readAsArrayBuffer(file);
-            } catch (error) {
-                console.error('Error reading file:', error);
-                const fileData = state.files.get(file.name);
-                fileData.status = 'error';
-                updateFileList();
-                showToast(`Failed to read ${file.name}.`, 'error');
-            }
-        }
-
-        function updateFileList() {
-            if (state.files.size === 0) {
-                noFilesMessage.classList.remove('hidden');
-                fileList.innerHTML = '';
-                fileList.appendChild(noFilesMessage);
-            } else {
-                noFilesMessage.classList.add('hidden');
-                fileList.innerHTML = '';
-                state.files.forEach((data, name) => {
-                    const fileItem = document.createElement('div');
-                    fileItem.className = 'file-item flex items-center justify-between p-3 rounded-lg border border-neutral-700';
-
-                    let statusIcon = '';
-                    if (data.status === 'processing') {
-                        statusIcon = `<div class="w-4 h-4 border-2 border-t-transparent border-blue-400 rounded-full animate-spin"></div>`;
-                    } else if (data.status === 'ready') {
-                        statusIcon = `<i data-lucide="check-circle-2" class="w-5 h-5 text-green-500"></i>`;
-                    } else {
-                        statusIcon = `<i data-lucide="alert-triangle" class="w-5 h-5 text-red-500"></i>`;
-                    }
-
-                    fileItem.innerHTML = `
-                        <div class="flex items-center gap-3 overflow-hidden">
-                            <i data-lucide="file-text" class="w-5 h-5 text-neutral-400 flex-shrink-0"></i>
-                            <span class="truncate text-sm text-neutral-300" title="${name}">${name}</span>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            ${statusIcon}
-                            <button class="remove-file-btn text-neutral-500 hover:text-red-500 transition-colors" data-filename="${name}">
-                                <i data-lucide="x" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                    `;
-                    fileList.appendChild(fileItem);
                 });
-                lucide.createIcons();
-            }
-        }
-        
-        fileList.addEventListener('click', (e) => {
-            const removeBtn = e.target.closest('.remove-file-btn');
-            if (removeBtn) {
-                const filename = removeBtn.dataset.filename;
-                state.files.delete(filename);
                 updateFileList();
+            }
+
+            async function processFile(file) {
+                try {
+                    const fileData = state.files.get(file.name);
+                    fileData.statusText = 'Extracting text...';
+                    updateFileList();
+
+                    const arrayBuffer = await file.arrayBuffer();
+                    const typedarray = new Uint8Array(arrayBuffer);
+                    const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                    
+                    let fullText = '';
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        fullText += textContent.items.map(item => item.str).join(' ') + '\n\n';
+                    }
+
+                    // OCR Fallback for scanned PDFs
+                    if (fullText.trim().length < 100) { // Heuristic for scanned doc
+                        fileData.statusText = 'Scanned PDF detected. Running OCR...';
+                        updateFileList();
+                        fullText = await ocrPdf(typedarray);
+                    }
+
+                    fileData.statusText = 'Processing text...';
+                    updateFileList();
+                    
+                    const cleanedText = preprocessText(fullText);
+                    fileData.text = cleanedText;
+                    fileData.chunks = chunkText(cleanedText, file.name);
+                    fileData.status = 'ready';
+                    fileData.statusText = 'Ready';
+                } catch (error) {
+                    console.error(`Error processing ${file.name}:`, error);
+                    const fileData = state.files.get(file.name);
+                    fileData.status = 'error';
+                    fileData.statusText = 'Error';
+                    showToast(`Failed to process ${file.name}.`, 'error');
+                } finally {
+                    updateFileList();
+                }
+            }
+
+            async function ocrPdf(typedarray) {
+                const tesseract = Tesseract.createWorker();
+                await tesseract.load();
+                await tesseract.loadLanguage('eng');
+                await tesseract.initialize('eng');
+                
+                const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                let fullOcrText = '';
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 2.0 });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    
+                    const { data: { text } } = await tesseract.recognize(canvas.toDataURL());
+                    fullOcrText += text + '\n\n';
+                }
+                await tesseract.terminate();
+                return fullOcrText;
+            }
+
+            function preprocessText(text) {
+                const lines = text.split('\n');
+                const lineCounts = {};
+                lines.forEach(line => {
+                    const trimmed = line.trim();
+                    if (trimmed.length > 10) { // Ignore short lines
+                        lineCounts[trimmed] = (lineCounts[trimmed] || 0) + 1;
+                    }
+                });
+
+                const pageCount = (text.match(/\f/g) || []).length + 1; // Approximation
+                const headerFooterThreshold = pageCount > 2 ? pageCount * 0.5 : 2;
+
+                const cleanedLines = lines.filter(line => {
+                    const trimmed = line.trim();
+                    return (lineCounts[trimmed] || 0) < headerFooterThreshold;
+                });
+
+                return cleanedLines.join('\n');
+            }
+
+            function chunkText(text, fileName) {
+                const chunkSize = 1000;
+                const chunkOverlap = 200;
+                const chunks = [];
+                for (let i = 0; i < text.length; i += (chunkSize - chunkOverlap)) {
+                    chunks.push({
+                        text: text.substring(i, i + chunkSize),
+                        source: fileName
+                    });
+                }
+                return chunks;
+            }
+
+            async function handleQuestion() {
+                const question = dom.questionInput.value.trim();
+                const readyFiles = Array.from(state.files.values()).filter(f => f.status === 'ready');
+
+                if (state.isProcessing || !question || readyFiles.length === 0) {
+                    if (!question) showToast('Please enter a question.', 'warning');
+                    if (readyFiles.length === 0) showToast('Please upload at least one PDF.', 'warning');
+                    return;
+                }
+
+                setProcessingState(true);
+
+                try {
+                    const allChunks = readyFiles.flatMap(f => f.chunks);
+                    const relevantChunks = retrieveRelevantChunks(allChunks, question);
+                    state.lastRetrievedChunks = relevantChunks;
+
+                    if (relevantChunks.length === 0) {
+                        dom.answerOutput.innerHTML = `<p>Sorry, I couldn't find any relevant information in the documents to answer that question.</p>`;
+                        dom.sourceContainer.classList.add('hidden');
+                        return;
+                    }
+
+                    const context = relevantChunks.map(c => `--- Chunk from ${c.source} ---\n${c.text}`).join('\n\n');
+                    const prompt = `You are an AI assistant evaluating an insurance claim. Your primary goal is accuracy. First, interpret the user's query, which may be written in shorthand, as a detailed claim scenario. Then, based *strictly* on the rules in the provided context chunks, determine if this claim is covered. Your answer must be exact and follow this format:\n1. Start with a simple "Yes." or "No.".\n2. In a single sentence, explain the most critical reason for your decision.\n3. In a new line, state "Source:" followed by the name of the document where you found the deciding rule.\n4. In a new line, start with "Quote:" and provide the exact short phrase or sentence from the context that proves your answer.\nDo not add any extra information.\n\nContext Chunks:\n${context}\n\nUser Query: ${question}\n\nDecision:`;
+                    
+                    await callGeminiAPI(prompt);
+                } catch (error) {
+                    console.error('Error during query execution:', error);
+                    dom.answerOutput.innerHTML = `<p>An error occurred. Please check the console for details.</p>`;
+                    showToast('An error occurred while getting the answer.', 'error');
+                } finally {
+                    setProcessingState(false);
+                }
+            }
+
+            function retrieveRelevantChunks(chunks, query) {
+                const queryTerms = query.toLowerCase().split(/\s+/).filter(term => term.length > 2);
+                const scoredChunks = chunks.map(chunk => {
+                    let score = 0;
+                    const chunkTextLower = chunk.text.toLowerCase();
+                    queryTerms.forEach(term => {
+                        if (chunkTextLower.includes(term)) {
+                            score++;
+                        }
+                    });
+                    return { ...chunk, score };
+                });
+
+                const filtered = scoredChunks.filter(chunk => chunk.score > 0);
+                filtered.sort((a, b) => b.score - a.score);
+                return filtered.slice(0, 5); // Return top 5 relevant chunks
+            }
+
+            async function callGeminiAPI(prompt) {
+                const apiKey = ""; // Handled by environment
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                
+                const payload = { contents: [{ parts: [{ text: prompt }] }] };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`API Error: ${response.status} ${response.statusText}`);
+
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (text) {
+                    displayAnswerAndSource(text);
+                } else {
+                    dom.answerOutput.innerHTML = `<p>Sorry, I couldn't generate a response based on the provided documents.</p>`;
+                    dom.sourceContainer.classList.add('hidden');
+                }
+            }
+
+            function displayAnswerAndSource(rawText) {
+                const lines = rawText.split('\n');
+                const decision = lines[0] || '';
+                const reason = lines[1] || '';
+                const sourceMatch = (lines.find(l => l.startsWith("Source:")) || '').replace("Source:", "").trim();
+                const quoteMatch = (lines.find(l => l.startsWith("Quote:")) || '').replace("Quote:", "").trim();
+
+                dom.answerOutput.innerHTML = `<p class="text-lg font-semibold">${decision}</p><p>${reason}</p><p class="text-sm text-neutral-400 mt-2">Source: ${sourceMatch || 'N/A'}</p>`;
+                
+                if (quoteMatch && state.lastRetrievedChunks.length > 0) {
+                    const sourceChunk = state.lastRetrievedChunks.find(c => c.source === sourceMatch)?.text || state.lastRetrievedChunks[0].text;
+                    const highlightedText = sourceChunk.replace(new RegExp(quoteMatch.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi'), (match) => `<mark>${match}</mark>`);
+                    dom.sourceText.innerHTML = highlightedText;
+                    dom.sourceContainer.classList.remove('hidden');
+                } else {
+                    dom.sourceContainer.classList.add('hidden');
+                }
+            }
+
+            // --- UI and State Management ---
+            function updateFileList() {
+                if (state.files.size === 0) {
+                    dom.noFilesMessage.classList.remove('hidden');
+                    dom.fileList.innerHTML = '';
+                    dom.fileList.appendChild(dom.noFilesMessage);
+                } else {
+                    dom.noFilesMessage.classList.add('hidden');
+                    dom.fileList.innerHTML = '';
+                    state.files.forEach((data, name) => {
+                        const fileItem = document.createElement('div');
+                        fileItem.className = 'file-item flex items-center justify-between p-3 rounded-lg border border-neutral-700';
+
+                        let statusIcon = '';
+                        if (data.status === 'processing') statusIcon = `<div class="w-4 h-4 border-2 border-t-transparent border-blue-400 rounded-full animate-spin"></div>`;
+                        else if (data.status === 'ready') statusIcon = `<i data-lucide="check-circle-2" class="w-5 h-5 text-green-500"></i>`;
+                        else statusIcon = `<i data-lucide="alert-triangle" class="w-5 h-5 text-red-500"></i>`;
+                        
+                        fileItem.innerHTML = `
+                            <div class="flex items-center gap-3 overflow-hidden">
+                                <i data-lucide="file-text" class="w-5 h-5 text-neutral-400 flex-shrink-0"></i>
+                                <div class="truncate">
+                                    <p class="text-sm text-neutral-300" title="${name}">${name}</p>
+                                    <p class="text-xs text-neutral-500">${data.statusText}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                ${statusIcon}
+                                <button class="remove-file-btn text-neutral-500 hover:text-red-500" data-filename="${name}"><i data-lucide="x" class="w-4 h-4"></i></button>
+                            </div>`;
+                        dom.fileList.appendChild(fileItem);
+                    });
+                    lucide.createIcons();
+                }
+            }
+
+            function setProcessingState(isProcessing) {
+                state.isProcessing = isProcessing;
+                dom.askButton.disabled = isProcessing;
+                dom.questionInput.disabled = isProcessing;
+                dom.loader.style.display = isProcessing ? 'flex' : 'none';
+                dom.answerPlaceholder.classList.toggle('hidden', isProcessing);
+                dom.answerOutput.classList.add('hidden');
+                dom.sourceContainer.classList.add('hidden');
+                if (!isProcessing) dom.answerOutput.classList.remove('hidden');
+            }
+
+            function showToast(message, type = 'info') {
+                const toast = document.createElement('div');
+                const colors = { info: 'bg-blue-500', success: 'bg-green-500', warning: 'bg-yellow-500', error: 'bg-red-500' };
+                toast.className = `fixed top-5 right-5 ${colors[type]} text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300`;
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.style.transform = 'translateX(0)', 100);
+                setTimeout(() => {
+                    toast.style.transform = 'translateX(120%)';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
             }
         });
-
-        // --- Q&A Logic ---
-
-        askButton.addEventListener('click', handleQuestion);
-
-        async function handleQuestion() {
-            const question = questionInput.value.trim();
-            const readyFiles = Array.from(state.files.values()).filter(f => f.status === 'ready');
-
-            if (state.isProcessing) return;
-            if (!question) {
-                showToast('Please enter a question.', 'warning');
-                return;
-            }
-            if (readyFiles.length === 0) {
-                showToast('Please upload and process at least one PDF file.', 'warning');
-                return;
-            }
-
-            setProcessingState(true);
-
-            try {
-                const context = readyFiles.map(f => `--- Document: ${f.file.name} ---\n${f.text}`).join('\n\n');
-                const prompt = `You are an AI assistant evaluating an insurance claim. First, interpret the user's query, which may be written in shorthand, as a detailed claim scenario. Then, based *strictly* on the rules in the provided documents, determine if this claim is covered. Your answer must follow this format exactly:\n1. Start with a simple "Yes." or "No.".\n2. In a single sentence, explain the most critical reason for your decision.\n3. In a new line, state "Source:" followed by the name of the document (e.g., "Source: HDFHLIP23024V072223.pdf") where you found the deciding rule.\nDo not add any extra information or formatting.\n\nProvided Documents:\n${context}\n\nUser Query: ${question}\n\nDecision:`;
-                
-                await callGeminiAPI(prompt);
-            } catch (error) {
-                console.error('Error during query execution:', error);
-                answerOutput.textContent = 'An error occurred. Please check the console for details.';
-                showToast('An error occurred while getting the answer.', 'error');
-            } finally {
-                setProcessingState(false);
-            }
-        }
-
-        async function callGeminiAPI(prompt) {
-            const apiKey = ""; // API key is handled by the environment
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-            
-            const payload = {
-                contents: [{
-                    parts: [{ text: prompt }]
-                }]
-            };
-
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errorBody = await response.json();
-                throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorBody.error.message}`);
-            }
-
-            const result = await response.json();
-            
-            if (result.candidates && result.candidates.length > 0 &&
-                result.candidates[0].content && result.candidates[0].content.parts &&
-                result.candidates[0].content.parts.length > 0) {
-                const text = result.candidates[0].content.parts[0].text;
-                answerOutput.textContent = text;
-            } else {
-                answerOutput.textContent = "Sorry, I couldn't generate a response based on the provided documents.";
-            }
-        }
-
-        function setProcessingState(isProcessing) {
-            state.isProcessing = isProcessing;
-            askButton.disabled = isProcessing;
-            questionInput.disabled = isProcessing;
-
-            if (isProcessing) {
-                loader.style.display = 'flex';
-                answerPlaceholder.classList.add('hidden');
-                answerOutput.classList.add('hidden');
-                answerOutput.textContent = '';
-            } else {
-                loader.style.display = 'none';
-                answerOutput.classList.remove('hidden');
-            }
-        }
-        
-        function showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            const colors = {
-                info: 'bg-blue-500',
-                success: 'bg-green-500',
-                warning: 'bg-yellow-500',
-                error: 'bg-red-500',
-            };
-            toast.className = `fixed top-5 right-5 ${colors[type]} text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.transform = 'translateX(0)';
-            }, 100);
-
-            setTimeout(() => {
-                toast.style.transform = 'translateX(120%)';
-                setTimeout(() => {
-                    toast.remove();
-                }, 300);
-            }, 3000);
-        }
-
     </script>
 </body>
 </html>
